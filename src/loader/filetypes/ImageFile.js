@@ -61,6 +61,7 @@ var ImageFile = new Class({
 
     function ImageFile (loader, key, url, xhrSettings, frameConfig)
     {
+        this.isWX = typeof wx !== 'undefined'
         var extension = 'png';
         var normalMapURL;
 
@@ -86,7 +87,7 @@ var ImageFile = new Class({
             type: 'image',
             cache: loader.textureManager,
             extension: extension,
-            responseType: 'blob',
+            responseType: this.isWX ? 'arraybuffer' : 'blob',
             key: key,
             url: url,
             xhrSettings: xhrSettings,
@@ -127,19 +128,32 @@ var ImageFile = new Class({
 
         this.data.onload = function ()
         {
-            File.revokeObjectURL(_this.data);
+            console.info('ImageFile onProcess onload')
+            if (!this.isWX) {
+                File.revokeObjectURL(_this.data);
 
-            _this.onProcessComplete();
+                _this.onProcessComplete();
+            } else {
+                this.addToCache()
+            }
         };
 
         this.data.onerror = function ()
         {
-            File.revokeObjectURL(_this.data);
+            if (!this.isWX) {
+                File.revokeObjectURL(_this.data);
 
-            _this.onProcessError();
+                _this.onProcessError();
+            } else {
+                console.log('||||||')
+            }
         };
 
-        File.createObjectURL(this.data, this.xhrLoader.response, 'image/png');
+        if (this.isWX) {
+            this.data.src = this.url
+        } else {
+            File.createObjectURL(this.data, this.xhrLoader.response, 'image/png');
+        }
     },
 
     /**

@@ -287,7 +287,13 @@ var File = new Class({
                 // xhr.onerror = this.onError
                 // xhr.onprogress = this.onProgress
 
-                this.xhrLoader = XHRLoader(this, this.loader.xhr);
+                if (typeof wx !== 'undefined' && !this.src.match(/^(?:blob:|data:|http:\/\/|https:\/\/|\/\/)/)) {
+                    this.onLoad({
+                        data: this.src
+                    })
+                } else {
+                    this.xhrLoader = XHRLoader(this, this.loader.xhr);
+                }
             }
         }
     },
@@ -303,18 +309,23 @@ var File = new Class({
      */
     onLoad: function (xhr, event)
     {
-        var localFileOk = ((xhr.responseURL && xhr.responseURL.indexOf('file://') === 0 && event.target.status === 0));
+        var success
+        if (typeof wx !== 'undefined') {
+            this.src = xhr.data
+            success = true
+        } else {
+            var localFileOk = ((xhr.responseURL && xhr.responseURL.indexOf('file://') === 0 && event.target.status === 0));
 
-        var success = !(event.target && event.target.status !== 200) || localFileOk;
+            success = !(event.target && event.target.status !== 200) || localFileOk;
 
-        //  Handle HTTP status codes of 4xx and 5xx as errors, even if xhr.onerror was not called.
-        if (xhr.readyState === 4 && xhr.status >= 400 && xhr.status <= 599)
-        {
-            success = false;
+            //  Handle HTTP status codes of 4xx and 5xx as errors, even if xhr.onerror was not called.
+            if (xhr.readyState === 4 && xhr.status >= 400 && xhr.status <= 599)
+            {
+                success = false;
+            }
+
+            this.resetXHR();
         }
-
-        this.resetXHR();
-
         this.loader.nextFile(this, success);
     },
 
